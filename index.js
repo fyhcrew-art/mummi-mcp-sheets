@@ -527,12 +527,31 @@ app.get('/', (_req, res) => {
 
 // OAuth configuration endpoint
 app.get('/oauth/config', (_req, res) => {
+  console.log('OAuth config requested');
   res.json({
     client_id: oauthConfig.client_id,
     auth_uri: oauthConfig.auth_uri,
     token_uri: oauthConfig.token_uri,
     redirect_uris: oauthConfig.redirect_uris,
-    scopes: oauthConfig.scopes
+    scopes: oauthConfig.scopes,
+    response_type: 'code',
+    access_type: 'offline',
+    prompt: 'consent'
+  });
+});
+
+// Alternative OAuth config endpoint that ChatGPT might expect
+app.get('/.well-known/oauth-configuration', (_req, res) => {
+  console.log('Well-known OAuth config requested');
+  res.json({
+    client_id: oauthConfig.client_id,
+    auth_uri: oauthConfig.auth_uri,
+    token_uri: oauthConfig.token_uri,
+    redirect_uris: oauthConfig.redirect_uris,
+    scopes: oauthConfig.scopes,
+    response_type: 'code',
+    access_type: 'offline',
+    prompt: 'consent'
   });
 });
 
@@ -569,6 +588,16 @@ app.get('/mcp/manifest', (_req, res) => {
   res.json({
     name: 'mcp-google-tools',
     version: '1.0.0',
+    oauth: {
+      client_id: oauthConfig.client_id,
+      auth_uri: oauthConfig.auth_uri,
+      token_uri: oauthConfig.token_uri,
+      redirect_uris: oauthConfig.redirect_uris,
+      scopes: oauthConfig.scopes,
+      response_type: 'code',
+      access_type: 'offline',
+      prompt: 'consent'
+    },
     tools: manifestTools.map((t) => {
       if (t.name === 'drive_upload_file') {
         // Document the 10MB limit in the schema description
