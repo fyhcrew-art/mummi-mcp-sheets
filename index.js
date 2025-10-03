@@ -506,9 +506,63 @@ const manifestTools = [
   },
 ];
 
+// OAuth Configuration
+const oauthConfig = {
+  client_id: process.env.GOOGLE_CLIENT_ID || 'your-google-client-id',
+  client_secret: process.env.GOOGLE_CLIENT_SECRET || 'your-google-client-secret',
+  auth_uri: 'https://accounts.google.com/o/oauth2/auth',
+  token_uri: 'https://oauth2.googleapis.com/token',
+  redirect_uris: [process.env.REDIRECT_URI || 'http://localhost:3000/oauth/callback'],
+  scopes: [
+    'https://www.googleapis.com/auth/spreadsheets',
+    'https://www.googleapis.com/auth/drive',
+    'https://www.googleapis.com/auth/drive.file'
+  ]
+};
+
 // Endpoints
 app.get('/', (_req, res) => {
   res.status(200).send('MCP OK');
+});
+
+// OAuth configuration endpoint
+app.get('/oauth/config', (_req, res) => {
+  res.json({
+    client_id: oauthConfig.client_id,
+    auth_uri: oauthConfig.auth_uri,
+    token_uri: oauthConfig.token_uri,
+    redirect_uris: oauthConfig.redirect_uris,
+    scopes: oauthConfig.scopes
+  });
+});
+
+// OAuth callback endpoint
+app.get('/oauth/callback', (req, res) => {
+  const { code, state } = req.query;
+  if (!code) {
+    return res.status(400).json({ error: 'Authorization code not provided' });
+  }
+  
+  // Exchange code for tokens
+  const { OAuth2Client } = require('google-auth-library');
+  const oauth2Client = new OAuth2Client(
+    oauthConfig.client_id,
+    oauthConfig.client_secret,
+    oauthConfig.redirect_uris[0]
+  );
+  
+  oauth2Client.getToken(code)
+    .then(({ tokens }) => {
+      res.json({
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        expires_in: tokens.expiry_date ? Math.floor((tokens.expiry_date - Date.now()) / 1000) : 3600
+      });
+    })
+    .catch((error) => {
+      console.error('Error exchanging code for tokens:', error);
+      res.status(400).json({ error: 'Failed to exchange authorization code' });
+    });
 });
 
 app.get('/mcp/manifest', (_req, res) => {
